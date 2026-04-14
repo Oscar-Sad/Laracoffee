@@ -110,9 +110,9 @@ function getLokasi() {
         $.each(data, function (i, field) {
             $op.append(
                 '<option value="' +
-                    field.province_id +
+                    field.id +
                     '">' +
-                    field.province +
+                    field.name +
                     "</option>"
             );
         });
@@ -164,11 +164,9 @@ function getCity(province_id) {
         $.each(data, function (i, field) {
             op.append(
                 '<option value="' +
-                    field.city_id +
+                    field.id +
                     '">' +
-                    field.type +
-                    " " +
-                    field.city_name +
+                    field.name +
                     "</option>"
             );
         });
@@ -197,25 +195,50 @@ function setOngkir({
     setVisible("#transaction", false);
     console.log("jalan dahal");
 
-    $.ajax({
-        url: `/shipping/cost/${origin}/${destination}/${quantity}/${courier}`,
-        method: "get",
-        dataType: "json",
-        success: function (data) {
-            var city = $("#city option:selected");
-            var province = $("#province option:selected");
-            $("#shipping_address").val(city.html() + ", " + province.html());
-            shipping = data[0]["costs"][0]["cost"][0]["value"];
-            total = sub_total + shipping;
-            refresh_data({
-                shipping: shipping,
-                sub_total: sub_total,
-                total: total,
-            });
+$.ajax({
+    url: `/shipping/cost/${origin}/${destination}/${quantity}/${courier}`,
+    method: "GET",
+    dataType: "json",
 
-            setVisible("#transaction", true);
-            setVisible("#loading_transaction", false);
-            console.log("end");
-        },
-    });
+    success: function (data) {
+        console.log(data); // always check API structure
+
+        let city = $("#city option:selected");
+        let province = $("#province option:selected");
+
+        $("#shipping_address").val(city.text() + ", " + province.text());
+
+        // ✅ SAFE CHECKING
+        let shipping = 0;
+
+        if (
+            data &&
+            data[0] &&
+            data[0].costs &&
+            data[0].costs.length > 0 &&
+            data[0].costs[0].cost &&
+            data[0].costs[0].cost.length > 0
+        ) {
+            shipping = data[0].costs[0].cost[0].value;
+        }
+
+        let total = sub_total + shipping;
+
+        refresh_data({
+            shipping: shipping,
+            sub_total: sub_total,
+            total: total
+        });
+
+        setVisible("#transaction", true);
+        setVisible("#loading_transaction", false);
+    },
+
+    error: function (xhr) {
+        console.log("Error response:", xhr.responseJSON);
+
+        setVisible("#transaction", true);
+        setVisible("#loading_transaction", false);
+    }
+});
 }
