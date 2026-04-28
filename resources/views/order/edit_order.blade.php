@@ -144,24 +144,35 @@
                         <div class="row mb-3">
                           <div class="col-12">Destination</div>
                           <div class="form-group col-7">
-                            <select class="form-control @error('province') is-invalid @enderror" id="province"
-                              name="province">
-                              <option value="{{ old('province','0') }}" selected="selected">Select Province</option>
+                            <select
+                                class="form-control @error('province') is-invalid @enderror"
+                                id="province"
+                                name="province"
+                                data-selected="{{ old('province', $order->province_id ?? '') }}"
+                            >
+                                <option value="">Select Province</option>
                             </select>
+
                             @error('province')
                             <div class="text-danger">{{ $message }}</div>
                             @enderror
-                          </div>
-                          <div class="form-group col-5">
-                            <select class="form-control @error('city') is-invalid @enderror" id="city" disabled
-                              name="city">
-                              <option value="{{ old('city', '0') }}" selected="selected">Select City
-                              </option>
+                        </div>
+
+                        <div class="form-group col-5">
+                            <select
+                                class="form-control @error('city') is-invalid @enderror"
+                                id="city"
+                                name="city"
+                                data-selected="{{ old('city', $order->city_id ?? '') }}"
+                                disabled
+                            >
+                                <option value="">Select City</option>
                             </select>
+
                             @error('city')
                             <div class="text-danger">{{ $message }}</div>
                             @enderror
-                          </div>
+                        </div>
                         </div>
                         <div class="row mb-3">
                           <div class="col-12">
