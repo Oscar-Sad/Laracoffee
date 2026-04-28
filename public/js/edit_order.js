@@ -1,59 +1,64 @@
+// ================= UTIL =================
 const setVisible = (elementOrSelector, visible) =>
     ((typeof elementOrSelector === "string"
         ? document.querySelector(elementOrSelector)
         : elementOrSelector
     ).style.display = visible ? "block" : "none");
 
+// ================= STATE =================
 var isUseCoupon = false;
 var couponTotal;
 var currentNum = 0;
 var couponUsed = 0;
 
 var quantity;
+var sub_total;
+var total;
+var shipping;
 
+var product_id;
+var destinasi;
+
+// ================= INIT =================
 $(document).ready(function () {
     quantity = parseInt($("#quantity").val());
-    price = parseInt($("#product_price").attr("data-truePrice"));
+    let price = parseInt($("#product_price").attr("data-truePrice"));
+
     sub_total = price * quantity;
     shipping = $("#total_price").val() - sub_total;
 
-    $("#sub-total").val(sub_total);
     $("#sub-total").html(sub_total);
-
     $("#shipping").attr("data-shippingCost", shipping);
     $("#shipping").html(shipping);
+
+    // 🚀 START FLOW
+    getLokasi();
 });
 
+// ================= COUPON =================
 function changeStatesCoupon() {
     isUseCoupon = !isUseCoupon;
 }
 
-// ================ order summary ==================
-var sub_total;
-var total;
-var shipping;
-// ===============================================
-
-// counter order summary [buat ]
+// ================= ORDER SUMMARY =================
 function myCounter() {
     var num = parseInt($("#quantity").val());
     var price = parseInt($("#product_price").attr("data-truePrice"));
     shipping = parseInt($("#shipping").attr("data-shippingCost"));
 
-    if (quantity != null && product_id != null && destinasi != null) {
+    if (quantity != null && destinasi != null) {
         setOngkir({ destination: destinasi, quantity: num });
     }
 
     if (isUseCoupon && couponTotal > 0 && currentNum < num) {
-        // ketika user menggunakan coupon
-        couponTotal = couponTotal - 1;
-        couponUsed = couponUsed + 1;
+        couponTotal--;
+        couponUsed++;
     } else if (isUseCoupon && couponUsed > 0 && currentNum > num) {
-        couponTotal = couponTotal + 1;
-        couponUsed = couponUsed - 1;
+        couponTotal++;
+        couponUsed--;
     } else if (!isUseCoupon && couponUsed > 0) {
-        couponTotal = couponTotal + 1;
-        couponUsed = couponUsed - 1;
+        couponTotal++;
+        couponUsed--;
     }
 
     sub_total = price * (num - couponUsed);
@@ -63,7 +68,7 @@ function myCounter() {
     $("#couponUsed").val(couponUsed);
     $("#couponUsedShow").html(`${couponUsed} coupon`);
 
-    refresh_data({ sub_total: sub_total, total: total });
+    refresh_data({ sub_total, total });
     currentNum = num;
 }
 
@@ -81,58 +86,78 @@ function refresh_data({ sub_total = 0, shipping = 0, total = 0 }) {
     }
 }
 
-// ===================================  Ongkir  =======================================
-// ==== DATA ====
-var product_id;
-var destinasi;
+// ================= ONGKIR =================
 
-// ==============
-
+// 🔥 Load Province + Auto Select
 function getLokasi() {
-    $op = $("#province");
+    let $op = $("#province");
+    let selectedProvince = $op.data("selected"); // from HTML
 
     $.getJSON("/shipping/province", function (data) {
+        $op.empty().append('<option value="">-- Select Province --</option>');
+
         $.each(data, function (i, field) {
+            let selected = field.id == selectedProvince ? "selected" : "";
+
             $op.append(
-                '<option value="' +
-                    field.province_id +
-                    '">' +
-                    field.province +
-                    "</option>"
+                `<option value="${field.id}" ${selected}>
+                    ${field.name}
+                </option>`
             );
         });
+
+        // ✅ AUTO LOAD CITY
+        if (selectedProvince) {
+            getCity(selectedProvince);
+        }
     });
 }
 
-getLokasi();
+// 🔥 Load City + Auto Select + Trigger Ongkir
+function getCity(province_id) {
+    let op = $("#city");
+    let selectedCity = op.data("selected");
 
-$("#province").on("change", function (e) {
-    e.preventDefault();
-    var option = $("option:selected", this).val();
-    $("#city option:gt(0)").remove();
-    $("#kurir").val("");
+    op.empty().append('<option value="">-- Select City --</option>');
 
-    if (option === "") {
-        alert("null");
-        $("#city").prop("disabled", true);
-        $("#kurir").prop("disabled", true);
-    } else {
-        $("#city").prop("disabled", false);
-        getCity(option);
+    $.getJSON("/shipping/city/" + province_id, function (data) {
+        $.each(data, function (i, field) {
+            let selected = field.id == selectedCity ? "selected" : "";
+
+            op.append(
+                `<option value="${field.id}" ${selected}>
+                    ${field.name}
+                </option>`
+            );
+        });
+
+        // ✅ AFTER CITY READY → TRIGGER ONGKIR
+        if (selectedCity) {
+            setCity();
+        }
+    });
+}
+
+// 🔥 When Province Changes
+$("#province").on("change", function () {
+    let province_id = $(this).val();
+
+    $("#city").prop("disabled", !province_id);
+    $("#city").data("selected", null); // reset selected
+
+    if (province_id) {
+        getCity(province_id);
     }
 });
 
-var currentCity = "0";
-$("#city").on("click", function (e) {
-    console.log("hehe" + $(this).val());
-    console.log("hehe" + currentCity);
-    if ($(this).val() != currentCity) {
-        console.log("jalanninh");
-        currentCity = $(this).val();
+// 🔥 When City Changes
+$("#city").on("change", function () {
+    if ($(this).val()) {
         setCity();
     }
 });
 
+// 🔥 Set City → Call Ongkir
 function setCity() {
     destinasi = $("#city").val();
     quantity = $("#quantity").val();
@@ -143,56 +168,49 @@ function setCity() {
     });
 }
 
-function getCity(province_id) {
-    var op = $("#city");
-
-    $.getJSON("/shipping/city/" + province_id, function (data) {
-        $.each(data, function (i, field) {
-            op.append(
-                '<option value="' +
-                    field.city_id +
-                    '">' +
-                    field.type +
-                    " " +
-                    field.city_name +
-                    "</option>"
-            );
-        });
-    });
-}
-
+// 🔥 Ongkir API Call
 function setOngkir({
-    origin = 42, // banyuwangi
+    origin = 42,
     destination,
     quantity,
     courier = "jne",
 }) {
-    if (quantity == 0) {
-        refresh_data({
-            shipping: 0,
-            sub_total: 0,
-            total: 0,
-        });
+    if (!destination || quantity == 0) return;
 
-        return;
-    }
     destination = parseInt(destination);
     quantity = parseInt(quantity);
 
     setVisible("#transaction", false);
     setVisible("#loading_transaction", true);
-    console.log("jalan dahal");
 
     $.ajax({
         url: `/shipping/cost/${origin}/${destination}/${quantity}/${courier}`,
-        method: "get",
+        method: "GET",
         dataType: "json",
+
         success: function (data) {
-            var city = $("#city option:selected");
-            var province = $("#province option:selected");
-            $("#shipping_address").val(city.html() + ", " + province.html());
-            shipping = data[0]["costs"][0]["cost"][0]["value"];
+            let city = $("#city option:selected");
+            let province = $("#province option:selected");
+
+            $("#shipping_address").val(
+                city.text() + ", " + province.text()
+            );
+
+            let shipping = 0;
+
+            if (
+                data &&
+                data[0] &&
+                data[0].costs &&
+                data[0].costs.length > 0 &&
+                data[0].costs[0].cost &&
+                data[0].costs[0].cost.length > 0
+            ) {
+                shipping = data[0].costs[0].cost[0].value;
+            }
+
             total = sub_total + shipping;
+
             refresh_data({
                 shipping: shipping,
                 sub_total: sub_total,
@@ -201,14 +219,21 @@ function setOngkir({
 
             setVisible("#transaction", true);
             setVisible("#loading_transaction", false);
-            console.log("end");
+        },
+
+        error: function (xhr) {
+            console.log("Error:", xhr.responseJSON);
+
+            setVisible("#transaction", true);
+            setVisible("#loading_transaction", false);
         },
     });
 }
 
-// cancel order
+// ================= CANCEL ORDER =================
 $("#button_edit_order").click(function (e) {
     e.preventDefault();
+
     Swal.fire({
         title: "Are you sure?",
         text: "order data will be changed",
@@ -221,7 +246,7 @@ $("#button_edit_order").click(function (e) {
     }).then((result) => {
         if (result.isConfirmed) {
             $("#form_edit_order").submit();
-        } else if (result.isDismissed) {
+        } else {
             Swal.fire("Action canceled", "", "info");
         }
     });
