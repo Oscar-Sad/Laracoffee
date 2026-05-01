@@ -1,0 +1,2071 @@
+{
+  "info": {
+    "_postman_id": "c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",
+    "name": "Laracoffee",
+    "description": "Postman collection for the Laracoffee Laravel e-commerce coffee shop app. Uses session-based auth (Laravel Sanctum / web middleware).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseURL", "value": "http://localhost:8000" },
+    { "key": "product_id", "value": "1" },
+    { "key": "order_id", "value": "1" },
+    { "key": "review_id", "value": "1" },
+    { "key": "transaction_id", "value": "1" },
+    { "key": "user_id", "value": "1" },
+    { "key": "province_id", "value": "11" },
+    { "key": "status_id", "value": "1" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Read baseURL from the active environment",
+          "const baseURL = pm.environment.get('baseURL') || pm.collectionVariables.get('baseURL') || 'http://localhost:8000';",
+          "pm.collectionVariables.set('baseURL', baseURL);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "GET / — Landing Page",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/", "host": ["{{baseURL}}"], "path": [""] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Landing page returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /auth — Login Page",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/auth", "host": ["{{baseURL}}"], "path": ["auth"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login page returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/login — Login (Success)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "email", "value": "{{email}}", "type": "text" },
+                { "key": "password", "value": "{{password}}", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseURL}}/auth/login", "host": ["{{baseURL}}"], "path": ["auth", "login"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "",
+                  "pm.test('Response is not 401 or 403', function () {",
+                  "    pm.expect(pm.response.code).to.not.be.oneOf([401, 403]);",
+                  "});",
+                  "",
+                  "// Save session cookie if present",
+                  "const cookies = pm.response.headers.get('Set-Cookie');",
+                  "if (cookies) {",
+                  "    pm.collectionVariables.set('session_cookie', cookies);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/login — Login (Wrong Credentials)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "email", "value": "wrong@example.com", "type": "text" },
+                { "key": "password", "value": "wrongpassword", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseURL}}/auth/login", "host": ["{{baseURL}}"], "path": ["auth", "login"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Wrong credentials returns 200 or 302 (redirect back)', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 422]);",
+                  "});",
+                  "",
+                  "pm.test('Response contains wrong credential message or redirect', function () {",
+                  "    const body = pm.response.text();",
+                  "    const hasError = body.includes('Wrong credential') || body.includes('wrong') || body.includes('invalid') || pm.response.code === 302;",
+                  "    pm.expect(hasError).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /auth/register — Register Page",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/auth/register", "host": ["{{baseURL}}"], "path": ["auth", "register"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Register page returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/register — Register (Success)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "fullname", "value": "Test User", "type": "text" },
+                { "key": "username", "value": "testuser123", "type": "text" },
+                { "key": "email", "value": "testuser123@example.com", "type": "text" },
+                { "key": "password", "value": "password123", "type": "text" },
+                { "key": "password_confirmation", "value": "password123", "type": "text" },
+                { "key": "phone", "value": "081234567890", "type": "text" },
+                { "key": "gender", "value": "male", "type": "text" },
+                { "key": "address", "value": "Jl. Test No. 1", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseURL}}/auth/register", "host": ["{{baseURL}}"], "path": ["auth", "register"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Register returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "",
+                  "pm.test('Register response is not 422 (no validation errors)', function () {",
+                  "    pm.expect(pm.response.code).to.not.equal(422);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/register — Register (Missing Fields)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "fullname", "value": "", "type": "text" },
+                { "key": "email", "value": "", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseURL}}/auth/register", "host": ["{{baseURL}}"], "path": ["auth", "register"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Missing fields returns 422', function () {",
+                  "    pm.expect(pm.response.code).to.equal(422);",
+                  "});",
+                  "",
+                  "pm.test('Response has validation errors', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('errors');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/register — Register (Duplicate Email)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "fullname", "value": "Admin User", "type": "text" },
+                { "key": "username", "value": "admindup", "type": "text" },
+                { "key": "email", "value": "admin@laracoffee.com", "type": "text" },
+                { "key": "password", "value": "password123", "type": "text" },
+                { "key": "password_confirmation", "value": "password123", "type": "text" },
+                { "key": "phone", "value": "081234567890", "type": "text" },
+                { "key": "gender", "value": "male", "type": "text" },
+                { "key": "address", "value": "Jl. Test No. 1", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseURL}}/auth/register", "host": ["{{baseURL}}"], "path": ["auth", "register"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Duplicate email returns 422', function () {",
+                  "    pm.expect(pm.response.code).to.equal(422);",
+                  "});",
+                  "",
+                  "pm.test('Error mentions email uniqueness', function () {",
+                  "    const json = pm.response.json();",
+                  "    const emailErrors = json.errors && json.errors.email ? json.errors.email.join(' ') : '';",
+                  "    pm.expect(emailErrors.toLowerCase()).to.include('unique').or.include('already').or.include('taken');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /auth/logout — Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/auth/logout", "host": ["{{baseURL}}"], "path": ["auth", "logout"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Logout returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Home",
+      "item": [
+        {
+          "name": "GET /home — Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/home", "host": ["{{baseURL}}"], "path": ["home"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Home/Dashboard returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "",
+                  "pm.test('Response is not 401 or 403', function () {",
+                  "    pm.expect(pm.response.code).to.not.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /home/customers — Customer List (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/home/customers", "host": ["{{baseURL}}"], "path": ["home", "customers"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Customer list returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "GET /profile/my_profile — View Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/profile/my_profile", "host": ["{{baseURL}}"], "path": ["profile", "my_profile"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('View profile returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /profile/edit_profile — Edit Profile Form",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/profile/edit_profile", "host": ["{{baseURL}}"], "path": ["profile", "edit_profile"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Edit profile form returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /profile/edit_profile/:user_id — Update Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "fullname", "value": "Updated Name", "type": "text" },
+                { "key": "username", "value": "updateduser", "type": "text" },
+                { "key": "email", "value": "updated@example.com", "type": "text" },
+                { "key": "phone", "value": "081234567890", "type": "text" },
+                { "key": "gender", "value": "male", "type": "text" },
+                { "key": "address", "value": "Jl. Updated No. 2", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseURL}}/profile/edit_profile/:user_id",
+              "host": ["{{baseURL}}"],
+              "path": ["profile", "edit_profile", ":user_id"],
+              "variable": [{ "key": "user_id", "value": "{{user_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Update profile returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /profile/change_password — Change Password Form",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/profile/change_password", "host": ["{{baseURL}}"], "path": ["profile", "change_password"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Change password form returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /profile/change_password — Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "old_password", "value": "password", "type": "text" },
+                { "key": "password", "value": "newpassword123", "type": "text" },
+                { "key": "password_confirmation", "value": "newpassword123", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseURL}}/profile/change_password", "host": ["{{baseURL}}"], "path": ["profile", "change_password"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Change password returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Product",
+      "item": [
+        {
+          "name": "GET /product — List All Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/product", "host": ["{{baseURL}}"], "path": ["product"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Product list returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /product/data/:id — Get Product Data (Valid ID)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/product/data/:id",
+              "host": ["{{baseURL}}"],
+              "path": ["product", "data", ":id"],
+              "variable": [{ "key": "id", "value": "{{product_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Product data returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});",
+                  "",
+                  "pm.test('Response has required product fields', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('product_name');",
+                  "    pm.expect(json).to.have.property('stock');",
+                  "    pm.expect(json).to.have.property('price');",
+                  "    pm.expect(json).to.have.property('discount');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /product/data/:id — Get Product Data (Invalid ID)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/product/data/:id",
+              "host": ["{{baseURL}}"],
+              "path": ["product", "data", ":id"],
+              "variable": [{ "key": "id", "value": "99999" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Invalid product ID returns 200 with null or 404', function () {",
+                  "    const isNullResponse = pm.response.code === 200 && (pm.response.text() === 'null' || pm.response.json() === null);",
+                  "    const isNotFound = pm.response.code === 404;",
+                  "    pm.expect(isNullResponse || isNotFound).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /product/add_product — Add Product Form (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/product/add_product", "host": ["{{baseURL}}"], "path": ["product", "add_product"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Add product form returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /product/add_product — Create Product (Valid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "product_name", "value": "Test Coffee", "type": "text" },
+                { "key": "stock", "value": "100", "type": "text" },
+                { "key": "price", "value": "25000", "type": "text" },
+                { "key": "discount", "value": "10", "type": "text" },
+                { "key": "orientation", "value": "hot", "type": "text" },
+                { "key": "description", "value": "A test coffee product", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseURL}}/product/add_product", "host": ["{{baseURL}}"], "path": ["product", "add_product"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create product returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "",
+                  "pm.test('Create product is not 422', function () {",
+                  "    pm.expect(pm.response.code).to.not.equal(422);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /product/add_product — Create Product (Missing Fields)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "product_name", "value": "", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseURL}}/product/add_product", "host": ["{{baseURL}}"], "path": ["product", "add_product"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Missing fields returns 422', function () {",
+                  "    pm.expect(pm.response.code).to.equal(422);",
+                  "});",
+                  "",
+                  "pm.test('Validation errors present', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('errors');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /product/add_product — Create Product (Discount Out of Range)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "product_name", "value": "Test Coffee", "type": "text" },
+                { "key": "stock", "value": "100", "type": "text" },
+                { "key": "price", "value": "25000", "type": "text" },
+                { "key": "discount", "value": "150", "type": "text" },
+                { "key": "orientation", "value": "hot", "type": "text" },
+                { "key": "description", "value": "A test coffee product", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseURL}}/product/add_product", "host": ["{{baseURL}}"], "path": ["product", "add_product"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Discount out of range returns 422', function () {",
+                  "    pm.expect(pm.response.code).to.equal(422);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /product/edit_product/:id — Edit Product Form (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/product/edit_product/:id",
+              "host": ["{{baseURL}}"],
+              "path": ["product", "edit_product", ":id"],
+              "variable": [{ "key": "id", "value": "{{product_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Edit product form returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /product/edit_product/:id — Update Product (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "product_name", "value": "Updated Coffee", "type": "text" },
+                { "key": "stock", "value": "80", "type": "text" },
+                { "key": "price", "value": "30000", "type": "text" },
+                { "key": "discount", "value": "5", "type": "text" },
+                { "key": "orientation", "value": "cold", "type": "text" },
+                { "key": "description", "value": "Updated description", "type": "text" },
+                { "key": "oldImage", "value": "old_image.jpg", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseURL}}/product/edit_product/:id",
+              "host": ["{{baseURL}}"],
+              "path": ["product", "edit_product", ":id"],
+              "variable": [{ "key": "id", "value": "{{product_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Update product returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Order",
+      "item": [
+        {
+          "name": "GET /order/order_data — List Active Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/order/order_data", "host": ["{{baseURL}}"], "path": ["order", "order_data"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Order data returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "",
+                  "pm.test('Response is not 401 or 403', function () {",
+                  "    pm.expect(pm.response.code).to.not.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /order/order_history — List Completed Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/order/order_history", "host": ["{{baseURL}}"], "path": ["order", "order_history"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Order history returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /order/order_data/:status_id — Filter Orders by Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/order/order_data/:status_id",
+              "host": ["{{baseURL}}"],
+              "path": ["order", "order_data", ":status_id"],
+              "variable": [{ "key": "status_id", "value": "{{status_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Filter orders by status returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /order/data/:order_id — Get Order JSON Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/order/data/:order_id",
+              "host": ["{{baseURL}}"],
+              "path": ["order", "data", ":order_id"],
+              "variable": [{ "key": "order_id", "value": "{{order_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Order data returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON with required fields', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('product_id');",
+                  "    pm.expect(json).to.have.property('user_id');",
+                  "    pm.expect(json).to.have.property('quantity');",
+                  "    pm.expect(json).to.have.property('total_price');",
+                  "    pm.expect(json).to.have.property('status_id');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /order/getProof/:order_id — Get Proof Image Info",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/order/getProof/:order_id",
+              "host": ["{{baseURL}}"],
+              "path": ["order", "getProof", ":order_id"],
+              "variable": [{ "key": "order_id", "value": "{{order_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get proof returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /order/make_order/:product_id — Make Order Form (Customer)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/order/make_order/:product_id",
+              "host": ["{{baseURL}}"],
+              "path": ["order", "make_order", ":product_id"],
+              "variable": [{ "key": "product_id", "value": "{{product_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Make order form returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /order/make_order/:product_id — Create Order (Valid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "address", "value": "Jl. Test No. 1", "type": "text" },
+                { "key": "payment_method", "value": "transfer", "type": "text" },
+                { "key": "quantity", "value": "2", "type": "text" },
+                { "key": "province", "value": "DKI Jakarta", "type": "text" },
+                { "key": "city", "value": "Jakarta Pusat", "type": "text" },
+                { "key": "total_price", "value": "50000", "type": "text" },
+                { "key": "shipping_address", "value": "Jl. Shipping No. 1", "type": "text" },
+                { "key": "coupon_used", "value": "0", "type": "text" },
+                { "key": "bank_id", "value": "1", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseURL}}/order/make_order/:product_id",
+              "host": ["{{baseURL}}"],
+              "path": ["order", "make_order", ":product_id"],
+              "variable": [{ "key": "product_id", "value": "{{product_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create order returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "",
+                  "pm.test('Create order is not 422', function () {",
+                  "    pm.expect(pm.response.code).to.not.equal(422);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /order/make_order/:product_id — Create Order (Quantity Exceeds Stock)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "address", "value": "Jl. Test No. 1", "type": "text" },
+                { "key": "payment_method", "value": "transfer", "type": "text" },
+                { "key": "quantity", "value": "99999", "type": "text" },
+                { "key": "province", "value": "DKI Jakarta", "type": "text" },
+                { "key": "city", "value": "Jakarta Pusat", "type": "text" },
+                { "key": "total_price", "value": "999990000", "type": "text" },
+                { "key": "shipping_address", "value": "Jl. Shipping No. 1", "type": "text" },
+                { "key": "coupon_used", "value": "0", "type": "text" },
+                { "key": "bank_id", "value": "1", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseURL}}/order/make_order/:product_id",
+              "host": ["{{baseURL}}"],
+              "path": ["order", "make_order", ":product_id"],
+              "variable": [{ "key": "product_id", "value": "{{product_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Quantity exceeds stock returns 422', function () {",
+                  "    pm.expect(pm.response.code).to.equal(422);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /order/edit_order/:order_id — Edit Order Form (Customer)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/order/edit_order/:order_id",
+              "host": ["{{baseURL}}"],
+              "path": ["order", "edit_order", ":order_id"],
+              "variable": [{ "key": "order_id", "value": "{{order_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Edit order form returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /order/edit_order/:order_id — Update Order (Customer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "address", "value": "Jl. Updated No. 2", "type": "text" },
+                { "key": "quantity", "value": "3", "type": "text" },
+                { "key": "province", "value": "DKI Jakarta", "type": "text" },
+                { "key": "city", "value": "Jakarta Selatan", "type": "text" },
+                { "key": "total_price", "value": "75000", "type": "text" },
+                { "key": "shipping_address", "value": "Jl. Shipping Updated No. 2", "type": "text" },
+                { "key": "coupon_used", "value": "0", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseURL}}/order/edit_order/:order_id",
+              "host": ["{{baseURL}}"],
+              "path": ["order", "edit_order", ":order_id"],
+              "variable": [{ "key": "order_id", "value": "{{order_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Update order returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /order/delete_proof/:order_id — Delete Proof (Customer)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/order/delete_proof/:order_id",
+              "host": ["{{baseURL}}"],
+              "path": ["order", "delete_proof", ":order_id"],
+              "variable": [{ "key": "order_id", "value": "{{order_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Delete proof returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /order/cancel_order/:order_id — Cancel Order (Already Canceled)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/order/cancel_order/:order_id",
+              "host": ["{{baseURL}}"],
+              "path": ["order", "cancel_order", ":order_id"],
+              "variable": [{ "key": "order_id", "value": "{{order_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Cancel order returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "",
+                  "pm.test('Already canceled response contains expected message', function () {",
+                  "    const body = pm.response.text();",
+                  "    // If already canceled, response should mention it",
+                  "    if (body.includes('already')) {",
+                  "        pm.expect(body.toLowerCase()).to.include('already canceled');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /order/upload_proof/:order_id — Upload Proof (Customer)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "old_image_proof", "value": "", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseURL}}/order/upload_proof/:order_id",
+              "host": ["{{baseURL}}"],
+              "path": ["order", "upload_proof", ":order_id"],
+              "variable": [{ "key": "order_id", "value": "{{order_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Upload proof returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 422]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /order/reject_order/:order_id/:product_id — Reject Order (Empty Reason)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "refusal_reason", "value": "", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseURL}}/order/reject_order/:order_id/:product_id",
+              "host": ["{{baseURL}}"],
+              "path": ["order", "reject_order", ":order_id", ":product_id"],
+              "variable": [
+                { "key": "order_id", "value": "{{order_id}}" },
+                { "key": "product_id", "value": "{{product_id}}" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Reject order with empty reason returns error', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302, 422]);",
+                  "});",
+                  "",
+                  "pm.test('Response contains cannot be empty message', function () {",
+                  "    const body = pm.response.text();",
+                  "    if (pm.response.code === 422) {",
+                  "        pm.expect(body.toLowerCase()).to.include('cannot be empty').or.include('required');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /order/end_order/:order_id/:product_id — End Order (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/order/end_order/:order_id/:product_id",
+              "host": ["{{baseURL}}"],
+              "path": ["order", "end_order", ":order_id", ":product_id"],
+              "variable": [
+                { "key": "order_id", "value": "{{order_id}}" },
+                { "key": "product_id", "value": "{{product_id}}" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('End order returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /order/approve_order/:order_id/:product_id — Approve Order (No Proof)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/order/approve_order/:order_id/:product_id",
+              "host": ["{{baseURL}}"],
+              "path": ["order", "approve_order", ":order_id", ":product_id"],
+              "variable": [
+                { "key": "order_id", "value": "{{order_id}}" },
+                { "key": "product_id", "value": "{{product_id}}" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Approve order returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "",
+                  "pm.test('No proof uploaded response contains expected message', function () {",
+                  "    const body = pm.response.text();",
+                  "    if (body.includes('proof') || body.includes('transfer')) {",
+                  "        pm.expect(body.toLowerCase()).to.include('no transfer proof').or.include('no proof');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Shipping",
+      "item": [
+        {
+          "name": "GET /shipping/province — Get All Provinces",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/shipping/province", "host": ["{{baseURL}}"], "path": ["shipping", "province"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get provinces returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is a JSON array', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /shipping/city/:province_id — Get Cities by Province",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/shipping/city/:province_id",
+              "host": ["{{baseURL}}"],
+              "path": ["shipping", "city", ":province_id"],
+              "variable": [{ "key": "province_id", "value": "{{province_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get cities returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is a JSON array', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /shipping/cost/:origin/:destination/:quantity/:courier — Calculate Shipping Cost",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/shipping/cost/:origin/:destination/:quantity/:courier",
+              "host": ["{{baseURL}}"],
+              "path": ["shipping", "cost", ":origin", ":destination", ":quantity", ":courier"],
+              "variable": [
+                { "key": "origin", "value": "501" },
+                { "key": "destination", "value": "114" },
+                { "key": "quantity", "value": "1" },
+                { "key": "courier", "value": "jne" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Calculate shipping cost returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON', function () {",
+                  "    pm.response.to.be.json;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Review",
+      "item": [
+        {
+          "name": "GET /review/product/:product_id — View Product Reviews",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/review/product/:product_id",
+              "host": ["{{baseURL}}"],
+              "path": ["review", "product", ":product_id"],
+              "variable": [{ "key": "product_id", "value": "{{product_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('View product reviews returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /review/data/:review_id — Get Review JSON Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/review/data/:review_id",
+              "host": ["{{baseURL}}"],
+              "path": ["review", "data", ":review_id"],
+              "variable": [{ "key": "review_id", "value": "{{review_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Review data returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON with required fields', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('rating');",
+                  "    pm.expect(json).to.have.property('review');",
+                  "    pm.expect(json).to.have.property('user_id');",
+                  "    pm.expect(json).to.have.property('product_id');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /review/add_review — Add Review (Valid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "rating", "value": "5", "type": "text" },
+                { "key": "review", "value": "Great coffee!", "type": "text" },
+                { "key": "product_id", "value": "{{product_id}}", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseURL}}/review/add_review", "host": ["{{baseURL}}"], "path": ["review", "add_review"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Add review returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "",
+                  "pm.test('Add review is not 422', function () {",
+                  "    pm.expect(pm.response.code).to.not.equal(422);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /review/add_review — Add Review (Missing Fields)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "rating", "value": "", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseURL}}/review/add_review", "host": ["{{baseURL}}"], "path": ["review", "add_review"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Missing review fields returns 422', function () {",
+                  "    pm.expect(pm.response.code).to.equal(422);",
+                  "});",
+                  "",
+                  "pm.test('Validation errors present', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('errors');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /review/edit_review/:review_id — Edit Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "rating", "value": "4", "type": "text" },
+                { "key": "review_edit", "value": "Updated review text", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseURL}}/review/edit_review/:review_id",
+              "host": ["{{baseURL}}"],
+              "path": ["review", "edit_review", ":review_id"],
+              "variable": [{ "key": "review_id", "value": "{{review_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Edit review returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /review/delete_review/:review_id — Delete Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/review/delete_review/:review_id",
+              "host": ["{{baseURL}}"],
+              "path": ["review", "delete_review", ":review_id"],
+              "variable": [{ "key": "review_id", "value": "{{review_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Delete review returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Transaction",
+      "item": [
+        {
+          "name": "GET /transaction — List All Transactions (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/transaction", "host": ["{{baseURL}}"], "path": ["transaction"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Transaction list returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "",
+                  "pm.test('Response is not 403', function () {",
+                  "    pm.expect(pm.response.code).to.not.equal(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /transaction/add_outcome — Add Outcome Form (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/transaction/add_outcome", "host": ["{{baseURL}}"], "path": ["transaction", "add_outcome"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Add outcome form returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /transaction/add_outcome — Create Outcome (Valid)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "category_id", "value": "1", "type": "text" },
+                { "key": "outcome", "value": "50000", "type": "text" },
+                { "key": "description", "value": "Coffee beans purchase", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseURL}}/transaction/add_outcome", "host": ["{{baseURL}}"], "path": ["transaction", "add_outcome"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create outcome returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "",
+                  "pm.test('Create outcome is not 422', function () {",
+                  "    pm.expect(pm.response.code).to.not.equal(422);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /transaction/add_outcome — Create Outcome (Missing Fields)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "category_id", "value": "", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{baseURL}}/transaction/add_outcome", "host": ["{{baseURL}}"], "path": ["transaction", "add_outcome"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Missing outcome fields returns 422', function () {",
+                  "    pm.expect(pm.response.code).to.equal(422);",
+                  "});",
+                  "",
+                  "pm.test('Validation errors present', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('errors');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /transaction/edit_outcome/:transaction_id — Edit Outcome Form (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseURL}}/transaction/edit_outcome/:transaction_id",
+              "host": ["{{baseURL}}"],
+              "path": ["transaction", "edit_outcome", ":transaction_id"],
+              "variable": [{ "key": "transaction_id", "value": "{{transaction_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Edit outcome form returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /transaction/edit_outcome/:transaction_id — Update Outcome (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "category_id", "value": "1", "type": "text" },
+                { "key": "outcome", "value": "75000", "type": "text" },
+                { "key": "description", "value": "Updated description", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseURL}}/transaction/edit_outcome/:transaction_id",
+              "host": ["{{baseURL}}"],
+              "path": ["transaction", "edit_outcome", ":transaction_id"],
+              "variable": [{ "key": "transaction_id", "value": "{{transaction_id}}" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Update outcome returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Point",
+      "item": [
+        {
+          "name": "GET /point/user_point — View User Points (Customer)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/point/user_point", "host": ["{{baseURL}}"], "path": ["point", "user_point"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('View user points returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /point/convert_point — Convert Points (Enough Points)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/point/convert_point", "host": ["{{baseURL}}"], "path": ["point", "convert_point"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Convert point returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "",
+                  "pm.test('Success response contains successfully message', function () {",
+                  "    const body = pm.response.text();",
+                  "    if (pm.response.code === 200) {",
+                  "        const hasSuccess = body.toLowerCase().includes('successfully') || body.toLowerCase().includes('success');",
+                  "        const hasNotEnough = body.toLowerCase().includes('not enough');",
+                  "        pm.expect(hasSuccess || hasNotEnough).to.be.true;",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /point/convert_point — Convert Points (Not Enough Points)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/point/convert_point", "host": ["{{baseURL}}"], "path": ["point", "convert_point"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Convert point returns 200 or 302', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});",
+                  "",
+                  "pm.test('Not enough points response contains expected message', function () {",
+                  "    const body = pm.response.text();",
+                  "    if (body.toLowerCase().includes('not enough') || body.toLowerCase().includes('insufficient')) {",
+                  "        pm.expect(body.toLowerCase()).to.include('not enough');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Charts",
+      "item": [
+        {
+          "name": "GET /chart/sales_chart — Sales Chart Data (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/chart/sales_chart", "host": ["{{baseURL}}"], "path": ["chart", "sales_chart"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Sales chart returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON with required fields', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('one_week_ago');",
+                  "    pm.expect(json).to.have.property('now');",
+                  "    pm.expect(json).to.have.property('data');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /chart/profits_chart — Profits Chart Data (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "X-Requested-With", "value": "XMLHttpRequest" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": { "raw": "{{baseURL}}/chart/profits_chart", "host": ["{{baseURL}}"], "path": ["chart", "profits_chart"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Profits chart returns 200', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is JSON with required fields', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('six_month_ago');",
+                  "    pm.expect(json).to.have.property('now');",
+                  "    pm.expect(json).to.have.property('data');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -27,6 +27,10 @@ class AuthController extends Controller
             $request->session()->regenerate();
             $message = "Login success";
 
+            if (auth()->user()->role_id == 1) {
+                return redirect('/admin/dashboard');
+            }
+
             myFlasherBuilder(message: $message, success: true);
             return redirect('/home');
         }
@@ -64,7 +68,7 @@ class AuthController extends Controller
             'remember_token' => Str::random(30),
             'role_id' => 2 // value 2 for customer role
         ]);
-        
+
         try {
             User::create($validatedData);
             $message = "Congratulations, your account has been created!";
