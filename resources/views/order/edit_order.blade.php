@@ -22,6 +22,8 @@
 
 
   <!-- main content -->
+  <form action="/order/edit_order/{{ $order->id }}" enctype="multipart/form-data" method="post" id="form_edit_order">
+    @csrf
   <div class="row flex-lg-nowrap">
 
     <div class="col-12 col-lg-9 mb-3">
@@ -51,11 +53,6 @@
                         </small>
                       </div>
                       <div class="mt-2">
-
-                        <!-- Form -->
-                        <form action="/order/edit_order/{{ $order->id }}" enctype="multipart/form-data" method="post"
-                          id="form_edit_order">
-                          @csrf
                       </div>
                     </div>
                     <div class="text-center text-sm-right">
