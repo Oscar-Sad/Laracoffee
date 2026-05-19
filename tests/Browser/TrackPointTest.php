@@ -65,7 +65,7 @@ class TrackPointTest extends DuskTestCase
             'image' => 'default.png',
         ]);
 
-        Status::create(['order_status' => 'approve', 'style' => 'success']); // ID 1
+        Status::create(['order_status' => 'approved', 'style' => 'success']); // ID 1
         Status::create(['order_status' => 'pending', 'style' => 'warning']); // ID 2
         Status::create(['order_status' => 'rejected', 'style' => 'danger']); // ID 3
         Status::create(['order_status' => 'done', 'style' => 'success']); // ID 4

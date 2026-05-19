@@ -81,7 +81,7 @@ class AdminOrderHistoryTest extends TestCase
         // NOTE (IMPORTANT FIX)
         // --------------------
         $note = Note::create([
-            'order_notes' => 'Test note',
+            'note' => 'Test note',
         ]);
 
         // --------------------
